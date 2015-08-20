@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Iterator;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
@@ -660,7 +660,7 @@ public class LocationUpdateService extends Service implements LocationListener {
             lastUpdateTime = SystemClock.elapsedRealtime();
             Log.i(TAG, "Posting  native location update: " + l);
             DefaultHttpClient httpClient = new DefaultHttpClient();
-            HttpPost request = new HttpPost(url);
+            HttpPut request = new HttpPut(url);
 
             JSONObject location = new JSONObject();
             location.put("latitude", l.getLatitude());
