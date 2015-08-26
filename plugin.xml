@@ -15,8 +15,6 @@
 
     <dependency id="cordova-plugin-geolocation" />
     <dependency id="cordova-plugin-dialogs" />
-    <!-- Load in the core background service -->
-    <dependency id="com.red_folder.phonegap.plugin.backgroundservice" url="https://github.com/Red-Folder/bgs-core.git"/>
 
     <js-module src="www/BackgroundGeoLocation.js" name="BackgroundGeoLocation">
         <clobbers target="window.BackgroundGeolocation" />

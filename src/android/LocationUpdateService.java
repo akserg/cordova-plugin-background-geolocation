@@ -27,7 +27,7 @@ import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.Notification;
 import android.app.PendingIntent;
-import android.app.Service; ///
+import android.app.Service;
 
 import android.content.Context;
 import android.content.Intent;
@@ -54,9 +54,7 @@ import android.widget.Toast;
 
 import static java.lang.Math.*;
 
-import com.red_folder.phonegap.plugin.backgroundservice.BackgroundService;
-
-public class LocationUpdateService extends BackgroundService implements LocationListener {
+public class LocationUpdateService extends Service implements LocationListener {
     private static final String TAG = "LocationUpdateService";
     private static final String STATIONARY_REGION_ACTION        = "com.tenforwardconsulting.cordova.bgloc.STATIONARY_REGION_ACTION";
     private static final String STATIONARY_ALARM_ACTION         = "com.tenforwardconsulting.cordova.bgloc.STATIONARY_ALARM_ACTION";
@@ -108,12 +106,12 @@ public class LocationUpdateService extends BackgroundService implements Location
     private NotificationManager notificationManager;
     public static TelephonyManager telephonyManager = null;
 
-    // @Override
-    // public IBinder onBind(Intent intent) {
-    //     // TODO Auto-generated method stub
-    //     Log.i(TAG, "OnBind" + intent);
-    //     return null;
-    // }
+    @Override
+    public IBinder onBind(Intent intent) {
+        // TODO Auto-generated method stub
+        Log.i(TAG, "OnBind" + intent);
+        return null;
+    }
 
     @Override
     public void onCreate() {
@@ -164,8 +162,6 @@ public class LocationUpdateService extends BackgroundService implements Location
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        super.onStartCommand(intent, flags, startId);
-
         Log.i(TAG, "Received start id " + startId + ": " + intent);
         if (intent != null) {
             try {
@@ -218,7 +214,7 @@ public class LocationUpdateService extends BackgroundService implements Location
         this.setPace(false);
 
         //We want this service to continue running until it is explicitly stopped
-        return START_STICKY/; //START_REDELIVER_INTENT;
+        return START_REDELIVER_INTENT;
     }
 
     @TargetApi(16)
@@ -663,83 +659,6 @@ public class LocationUpdateService extends BackgroundService implements Location
         try {
             lastUpdateTime = SystemClock.elapsedRealtime();
             Log.i(TAG, "Posting  native location update: " + l);
-            // DefaultHttpClient httpClient = new DefaultHttpClient();
-            // HttpPut request = new HttpPut(url);
-
-            JSONObject location = new JSONObject();
-            location.put("latitude", l.getLatitude());
-            location.put("longitude", l.getLongitude());
-            location.put("accuracy", l.getAccuracy());
-            location.put("speed", l.getSpeed());
-            location.put("bearing", l.getBearing());
-            location.put("altitude", l.getAltitude());
-            location.put("recorded_at", dao.dateToString(l.getRecordedAt()));
-            // params.put("location", location);
-
-            Log.i(TAG, "location: " + location.toString());
-
-            // StringEntity se = new StringEntity(params.toString());
-            // request.setEntity(se);
-            // request.setHeader("Accept", "application/json");
-            // request.setHeader("Content-type", "application/json");
-
-            // Iterator<String> headkeys = headers.keys();
-            // while( headkeys.hasNext() ){
-            //     String headkey = headkeys.next();
-            //     if(headkey != null) {
-            //                 Log.d(TAG, "Adding Header: " + headkey + " : " + (String)headers.getString(headkey));
-            //                 request.setHeader(headkey, (String)headers.getString(headkey));
-            //     }
-            // }
-            // Log.d(TAG, "Posting to " + request.getURI().toString());
-            // HttpResponse response = httpClient.execute(request);
-            // Log.i(TAG, "Response received: " + response.getStatusLine());
-            if (response.getStatusLine().getStatusCode() == 200) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (Throwable e) {
-            Log.w(TAG, "Exception posting location: " + e);
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private com.tenforwardconsulting.cordova.bgloc.data.Location savedLocation;
-
-    @Override
-    protected JSONObject doWork() {
-        JSONObject result = new JSONObject();
-        
-        try {
-            result.put("latitude", savedLocation.getLatitude());
-            result.put("longitude", savedLocation.getLongitude());
-            result.put("accuracy", savedLocation.getAccuracy());
-            result.put("speed", savedLocation.getSpeed());
-            result.put("bearing", savedLocation.getBearing());
-            result.put("altitude", savedLocation.getAltitude());
-        } catch (JSONException e) {
-        }
-        
-        return result;  
-    }
-
-    public finish() {
-        if (savedLocation != null) {
-            locationDAO.deleteLocation(savedLocation);
-            savedLocation = null;
-        }
-    }
-
-    private boolean postLocation2(com.tenforwardconsulting.cordova.bgloc.data.Location l, LocationDAO dao) {
-        if (l == null) {
-            Log.w(TAG, "postLocation: null location");
-            return false;
-        }
-        try {
-            lastUpdateTime = SystemClock.elapsedRealtime();
-            Log.i(TAG, "Posting  native location update: " + l);
             DefaultHttpClient httpClient = new DefaultHttpClient();
             HttpPut request = new HttpPut(url);
 
@@ -845,11 +764,11 @@ public class LocationUpdateService extends BackgroundService implements Location
         protected Boolean doInBackground(Object...objects) {
             Log.d(TAG, "Executing PostLocationTask#doInBackground");
             LocationDAO locationDAO = DAOFactory.createLocationDAO(LocationUpdateService.this.getApplicationContext());
-            com.tenforwardconsulting.cordova.bgloc.data.Location[] locations = locationDAO.getAllLocations();
-            if (LocationUpdateService.this.savedLocation == null && locations.length() > 0) {
-                LocationUpdateService.this.savedLocation = locations[0];
+            for (com.tenforwardconsulting.cordova.bgloc.data.Location savedLocation : locationDAO.getAllLocations()) {
                 Log.d(TAG, "Posting saved location");
-                LocationUpdateService.this.runOnce();
+                if (postLocation(savedLocation, locationDAO)) {
+                    locationDAO.deleteLocation(savedLocation);
+                }
             }
             return true;
         }
